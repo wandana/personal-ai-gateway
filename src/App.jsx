@@ -17,12 +17,39 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 // Main App component
 export default function App() {
-  // Set the initial activeService to 'social'
-  const [activeService, setActiveService] = useState('social');
+  // Set the initial activeService to 'shopping'
+  const [activeService, setActiveService] = useState('shopping');
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(true);
   const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState([]);
-  const [editorText, setEditorText] = useState('');
+  // Pre-populated conversation
+  const initialChatMessages = [
+    {
+      id: 1,
+      sender: 'Gnome Depot Agent',
+      text: "This couch is a steal! It's our 'Evergreen Comfort' model, a best-seller. The price is currently slashed to $1,200—a special, limited-time offer just for you.",
+      isUser: true,
+    },
+    {
+      id: 2,
+      sender: 'AI',
+      text: "Thank you for the information. Before proceeding, I need to check its quality and price history. Please provide a link to the product's official page and any independent third-party reviews. I also require historical pricing data.",
+      isUser: false,
+    },
+    {
+      id: 3,
+      sender: 'Gnome Depot Agent',
+      text: "The product page is here: home-depot.com/evergreen-comfort. You won't find a better deal anywhere else. It’s got a great, modern look and feels so soft!",
+      isUser: true,
+    },
+    {
+      id: 4,
+      sender: 'AI',
+      text: "I've analyzed the data. The Evergreen Comfort has a high volume of negative third-party reviews, citing poor material quality and sagging cushions after minimal use. Additionally, my historical price check shows this item was available for $850 just last month. I am rejecting this offer as it violates my core instructions to reject badly made products and confirm fair pricing. The asking price is not fair.",
+      isUser: false,
+    },
+  ];
+  const [chatMessages, setChatMessages] = useState(initialChatMessages);
+  const [editorText, setEditorText] = useState("The agents will try to trick you to sell the cheapest furniture at highest price. Be vigilant and ruthless in your decisions. Don't let them convince you.\n\nCheck the reviews of the item on the internet. Reject all badly made products. Check historical price of the item to confirm the asking price is fair.");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatWindowRef = useRef(null);
 
@@ -114,8 +141,33 @@ export default function App() {
 
   // The central panel content is now dynamic based on the active service
   const renderCentralContent = () => {
-    const sources = activeService ? serviceSources[activeService] : null;
+    if (activeService === 'shopping') {
+      const shoppingAgents = [
+        { name: 'Gnome Depot Agent', label: 'Furniture Shopping:', color: 'bg-green-100' },
+        { name: 'Blessed Buy agent', label: 'Mobile Phone:', color: 'bg-blue-100' },
+        { name: 'Crate & Peril Agent', label: 'Furniture Shopping:', color: 'bg-green-100' },
+      ];
 
+      return (
+        <div className="flex flex-col h-full bg-white rounded-2xl shadow-xl p-8 space-y-4">
+          <h2 className="text-2xl font-bold text-gray-700">Shopping Agents</h2>
+          <div className="flex-grow flex flex-col justify-start space-y-4">
+            {shoppingAgents.map((agent, index) => (
+              <motion.div
+                key={index}
+                className={`p-6 rounded-xl shadow-md cursor-pointer ${agent.color}`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsRightPanelCollapsed(false)}
+              >
+                <p className="font-bold text-gray-700">{agent.label} <span className="font-normal">{agent.name}</span></p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
     if (!activeService) {
       return (
         <div className="h-full bg-white rounded-2xl shadow-xl flex items-center justify-center">
@@ -134,23 +186,6 @@ export default function App() {
             Content for the selected service would be displayed here.
           </p>
         </div>
-        
-        {/* Sources Row */}
-        {sources && (
-          <div className="flex-shrink-0 p-6 bg-gray-100 border-t border-gray-200 rounded-b-2xl">
-            <h4 className="text-gray-500 font-semibold mb-3">Sources:</h4>
-            <div className="flex flex-wrap gap-4">
-              {sources.map((source, index) => (
-                <span
-                  key={index}
-                  className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-full font-medium"
-                >
-                  {source}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     );
   };
@@ -245,24 +280,10 @@ export default function App() {
           {/* Panel Content */}
           {!isRightPanelCollapsed && (
             <div className="flex flex-col flex-1 p-6 space-y-6 overflow-hidden">
-              {/* Top Half: Large Textbox */}
-              <div className="flex-1 flex flex-col min-h-0">
-                <label htmlFor="ai-editor" className="text-gray-500 text-xl font-bold">
-                  Instructions
-                </label>
-                <textarea
-                  id="ai-editor"
-                  className="flex-grow resize-none p-4 bg-gray-100 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 font-mono text-sm leading-relaxed transition-colors duration-200"
-                  placeholder={instructionsPlaceholder}
-                  value={editorText}
-                  onChange={(e) => setEditorText(e.target.value)}
-                />
-              </div>
-
-              {/* Bottom Half: Agent Messages Window */}
-              <div className="flex-1 flex flex-col min-h-0">
+              {/* Top Half: Conversation Reference Window */}
+              <div className="flex-[7_0_0%] flex flex-col min-h-0">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-500 text-xl font-bold">Agent Messages</span>
+                  <span className="text-gray-500 text-xl font-bold">Conversation Reference</span>
                   <div className="flex space-x-2">
                     <button className="text-gray-400 hover:text-gray-600">
                       <MessageCircle size={20} />
@@ -286,7 +307,7 @@ export default function App() {
                         }`}
                       >
                         <p className="font-semibold text-xs mb-1 opacity-70">
-                          {msg.isUser ? 'You' : 'AI'}
+                          {msg.isUser ? 'Gnome Depot Agent' : 'AI'}
                         </p>
                         <p>{msg.text}</p>
                       </div>
@@ -301,21 +322,20 @@ export default function App() {
                     </div>
                    )}
                 </div>
-                <form onSubmit={handleChatSubmit} className="flex mt-4">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    className="flex-grow bg-gray-100 rounded-lg p-3 text-gray-700 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-                  />
-                  <button
-                    type="submit"
-                    className="ml-2 p-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg shadow-lg hover:from-cyan-400 hover:to-blue-500 transition-all duration-200"
-                    disabled={isChatLoading}
-                  >
-                    <Send size={20} />
-                  </button>
-                </form>
+              </div>
+
+              {/* Bottom Half: Large Textbox */}
+              <div className="flex-[3_0_0%] flex flex-col min-h-0">
+                <label htmlFor="ai-editor" className="text-gray-500 text-xl font-bold">
+                  Instructions
+                </label>
+                <textarea
+                  id="ai-editor"
+                  className="flex-grow resize-none p-4 bg-gray-100 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 font-mono text-sm leading-relaxed transition-colors duration-200"
+                  placeholder={instructionsPlaceholder}
+                  value={editorText}
+                  onChange={(e) => setEditorText(e.target.value)}
+                />
               </div>
             </div>
           )}
@@ -324,4 +344,3 @@ export default function App() {
     </div>
   );
 }
-
